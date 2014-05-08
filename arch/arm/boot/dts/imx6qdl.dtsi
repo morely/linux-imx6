@@ -1078,6 +1078,12 @@
 			>;
 		};
 
+		pinctrl_ecspi1_cs_2: ecspi1_cs_grp-2 {
+			fsl,pins = <
+				MX6QDL_PAD_DISP0_DAT23__GPIO5_IO17 0x80000000
+			>;
+		};
+
 		pinctrl_ecspi1_1: ecspi1grp-1 {
 			fsl,pins = <
 				MX6QDL_PAD_EIM_D17__ECSPI1_MISO 0x100b1
@@ -1093,9 +1099,50 @@
 				MX6QDL_PAD_KEY_COL0__ECSPI1_SCLK 0x100b1
 			>;
 		};
-	};
 
+		pinctrl_ecspi1_3: ecspi1grp-3 {
+			fsl,pins = <
+				MX6QDL_PAD_DISP0_DAT20__ECSPI1_SCLK 0x100b1
+				MX6QDL_PAD_DISP0_DAT21__ECSPI1_MOSI 0x100b1
+				MX6QDL_PAD_DISP0_DAT22__ECSPI1_MISO 0x100b1
+			>;
+		};
+	};
+	ecspi2 {
+		pinctrl_ecspi2_cs_1: ecspi2_cs_grp-1 {
+			fsl,pins = <
+				MX6QDL_PAD_DISP0_DAT18__GPIO5_IO12 0x80000000
+			>;
+		};
+		pinctrl_ecspi2_1: ecspi2grp-1 {
+			fsl,pins = <
+				MX6QDL_PAD_DISP0_DAT16__ECSPI2_MOSI 0x100b1
+				MX6QDL_PAD_DISP0_DAT17__ECSPI2_MISO 0x100b1
+				MX6QDL_PAD_DISP0_DAT19__ECSPI2_SCLK 0x100b1
+			>;
+		};
+	};
 	ecspi3 {
+		pinctrl_ecspi3_cs_1: ecspi3_cs_grp-1 {
+			fsl,pins = <
+				MX6QDL_PAD_DISP0_DAT3__GPIO4_IO24 0x80000000
+			>;
+		};
+		pinctrl_ecspi3_cs_2: ecspi3_cs_grp-2 {
+			fsl,pins = <
+				MX6QDL_PAD_DISP0_DAT4__GPIO4_IO25 0x80000000
+			>;
+		};
+		pinctrl_ecspi3_cs_3: ecspi3_cs_grp-3 {
+			fsl,pins = <
+				MX6QDL_PAD_DISP0_DAT5__GPIO4_IO26 0x80000000
+			>;
+		};
+		pinctrl_ecspi3_cs_4: ecspi3_cs_grp-4 {
+			fsl,pins = <
+				MX6QDL_PAD_DISP0_DAT6__GPIO4_IO27 0x80000000
+			>;
+		};
 		pinctrl_ecspi3_1: ecspi3grp-1 {
 			fsl,pins = <
 				MX6QDL_PAD_DISP0_DAT2__ECSPI3_MISO 0x100b1
@@ -1549,6 +1596,11 @@
 			>;
 		};
 		pinctrl_pwm3_2: pwm3grp-2 {
+			fsl,pins = <
+				MX6QDL_PAD_SD1_DAT1__PWM3_OUT 0x1b0b1
+			>;
+		};
+		pinctrl_pwm3_3: pwm3grp-3 {
 			fsl,pins = <
 				MX6QDL_PAD_SD1_DAT1__PWM3_OUT 0x1b0b1
 			>;
