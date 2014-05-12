@@ -182,13 +182,6 @@
 		status = "disabled";
 	};
 
-	backlight_lcd {
-		compatible = "pwm-backlight";
-		pwms = <&pwm1 0 5000000>;
-		brightness-levels = <0 4 8 16 32 64 128 255>;
-		default-brightness-level = <7>;
-	};
-
 	backlight_lvds {
 		compatible = "pwm-backlight";
 		pwms = <&pwm4 0 5000000>;
@@ -228,6 +221,20 @@
 		#reset-cells = <0>;
 	};
 #endif
+	pwmleds {
+		compatible = "pwm-leds";
+
+		j15_pwm1 {
+			label = "j15:pwm1";
+			pwms = <&pwm1 0 5000000>;
+			max-brightness = <255>;
+		};
+		j15_pwm2 {
+			label = "j15:pwm2";
+			pwms = <&pwm2 0 5000000>;
+			max-brightness = <255>;
+		};
+	};
 };
 
 &audmux {
