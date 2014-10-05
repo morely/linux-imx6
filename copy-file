@@ -1,0 +1,8 @@
+#!/bin/bash
+cur_dir=$(pwd)
+cp ./e9/arch/arm/boot/zImage ~/share/tftp/imx
+cp $cur_dir/e9/arch/arm/boot/dts/imx6q-e9.dtb ~/share/tftp/imx
+echo "Cpoy zImage & dtb OK!"
+chmod 777 ~/share/tftp/imx/imx6q-e9.dtb
+chmod 777 ~/share/tftp/imx/zImage
+echo "Auther OK!"

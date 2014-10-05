@@ -1,0 +1,2 @@
+time make -j8 O=e9 ARCH=arm uImage LOADADDR=0x10008000
+time make -j8 O=e9 ARCH=arm imx6q-e9.dtb

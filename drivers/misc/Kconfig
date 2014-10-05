@@ -4,6 +4,14 @@
 
 menu "Misc devices"
 
+config GPIO_DCMOTORS
+	tristate "Support PWM and GPIO control DC MOTORs with rate encode"
+	depends on PWM
+	help
+	  Say Y here if you need support dc-motor control by using pwm and gpio.
+
+	  To compile this driver as a module, choose M here: the
+	  module will be called gpio_dcmotors.
 config SENSORS_LIS3LV02D
 	tristate
 	depends on INPUT

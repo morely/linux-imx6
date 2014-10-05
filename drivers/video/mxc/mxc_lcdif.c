@@ -48,6 +48,36 @@ static struct fb_videomode lcdif_modedb[] = {
 	FB_SYNC_CLK_LAT_FALL,
 	FB_VMODE_NONINTERLACED,
 	0,},
+	{
+	/* 1024x768 @ 60 Hz,  160-165*/
+	"XVGA", 60, 1024, 768, 15384, 165, 24, 29, 3, 136, 6,
+	0,
+	FB_VMODE_NONINTERLACED, 
+	FB_MODE_IS_VESA,},	
+	{
+	/* 1280x720 @ 60 Hz,  72/216->193/95 3/22->8/17*/
+	"HDTV", 60, 1280, 720, 13484, 198, 90, 20, 5, 80, 5,
+	0,
+	FB_VMODE_NONINTERLACED, 
+	FB_MODE_IS_VESA,},	
+	{
+	/* 1280x1024 @ 60 Hz , pixel clk @ 108MHz */
+	"SXVGA", 60, 1280, 1024, 9262, 48, 248, 1, 38, 112, 3,
+	0,
+	FB_VMODE_NONINTERLACED,
+	0,},
+	{
+	/* 1280x1024 @ 74 Hz, 78.85 kHz hsync */
+	"SXVGAB", 74, 1280, 1024, 7407, 256, 32, 34, 3, 144, 3,
+	0,
+	FB_VMODE_NONINTERLACED,0,
+	},
+	/* 1920x1080 @ 60 Hz, 67.2 kHz hsync */
+	{
+        "FHD", 60, 1920, 1080, 6734, 78, 158, 20, 20, 44, 5,
+        0,
+        FB_VMODE_NONINTERLACED, 0,
+        },
 };
 static int lcdif_modedb_sz = ARRAY_SIZE(lcdif_modedb);
 
@@ -68,7 +98,7 @@ static int lcdif_init(struct mxc_dispdrv_handle *disp,
 	ret = fb_find_mode(&setting->fbi->var, setting->fbi, setting->dft_mode_str,
 				modedb, modedb_sz, NULL, setting->default_bpp);
 	if (!ret) {
-		fb_videomode_to_var(&setting->fbi->var, &modedb[0]);
+		fb_videomode_to_var(&setting->fbi->var, &modedb[2]);
 		setting->if_fmt = plat_data->default_ifmt;
 	}
 

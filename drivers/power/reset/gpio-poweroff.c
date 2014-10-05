@@ -57,7 +57,7 @@ static int gpio_poweroff_probe(struct platform_device *pdev)
 	if (pm_power_off != NULL) {
 		pr_err("%s: pm_power_off function already registered",
 		       __func__);
-		return -EBUSY;
+//		return -EBUSY;
 	}
 
 	gpio_num = of_get_gpio_flags(pdev->dev.of_node, 0, &flags);
@@ -80,7 +80,7 @@ static int gpio_poweroff_probe(struct platform_device *pdev)
 			goto err;
 		}
 	} else {
-		if (gpio_direction_output(gpio_num, gpio_active_low)) {
+		if (gpio_direction_output(gpio_num, !gpio_active_low)) {
 			pr_err("Could not set direction of GPIO %d", gpio_num);
 			goto err;
 		}
