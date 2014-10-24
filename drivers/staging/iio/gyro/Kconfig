@@ -3,6 +3,13 @@
 #
 menu "Digital gyroscope sensors"
 
+config L3G4200D
+	tristate "Analog Devices L3G4200D Yaw Rate Gyroscope with I2C driver"
+	depends on I2C
+	help
+	  Say yes here to build support for ST Devices L3G4200D wide bandwidth
+	  yaw rate gyroscope with I2C.
+
 config ADIS16060
 	tristate "Analog Devices ADIS16060 Yaw Rate Gyroscope with SPI driver"
 	depends on SPI

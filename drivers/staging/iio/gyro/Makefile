@@ -10,3 +10,5 @@ obj-$(CONFIG_ADIS16130) += adis16130.o
 
 adis16260-y             := adis16260_core.o
 obj-$(CONFIG_ADIS16260) += adis16260.o
+
+obj-$(CONFIG_L3G4200D) += l3g4200d_gyr.o

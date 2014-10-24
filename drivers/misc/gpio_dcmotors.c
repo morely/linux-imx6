@@ -34,13 +34,13 @@
 #include <linux/pwm.h>
 //#include <linux/math.h>
 #include <linux/motors.h>
-#define PI 3142
+#define PI 314159
 #define D   85
-#define WHEEL_LENTH  (PI*D)
+#define WHEEL_E5_LENTH  (PI*D)
 
-/*(WHEEL_LENTH :1000*D*PI;2*(80:1)*1000*10)*/
-#define vSPEED_TO_wSPEED_BY_MOTOR(x)    (x*1600000/WHEEL_LENTH)
-#define wSPEED_TO_vSPEED_BY_MOTOR(x)    x*WHEEL_LENTH/1600000
+/*(WHEEL_LENTH :100*D*PI;2*(80:1)*1000)*/
+#define vSPEED_TO_tusSPEED_BY_MOTOR(x)    (WHEEL_E5_LENTH/(16*x))
+#define tusSPEED_TO_vSPEED_BY_MOTOR(x)    vSPEED_TO_tusSPEED_BY_MOTOR(x)
 #define SQRT(x)                         ((x)/100)
 enum motor_pos{leftback,rightback,leftfront,rightfront};
 enum motor_direction{forward,backward};
@@ -77,6 +77,7 @@ struct gpio_motor_data {//board motor info
 	unsigned int speed;
 	enum motor_direction direction;//forward/backward
 	unsigned int cur_speed;
+	unsigned int cur_speed_t; //time val :hall circle
 	unsigned int cur_circle_index;
 	unsigned int circle_speed[5];
 	spinlock_t lock;
@@ -225,12 +226,17 @@ static void gpio_dcmotors_gpio_work_func(struct work_struct *work)
 	//	pm_relax(bdata->input->dev.parent);
 }
 
+void gpio_dcmotors_set_motor_direction(struct gpio_motor_data *bdata,enum motor_direction direction);
 static void gpio_dcmotors_motor_speed_update(struct gpio_motor_data *bdata){
     struct gpio_dcmotors_motor *pmotor = bdata->pmotor;
     unsigned int diff_speed,next_speed;
 
 //for test:
     next_speed = bdata->speed;
+    if((bdata->direction == forward) && (bdata->pmotor->pwm_polarity == 1))
+        gpio_dcmotors_set_motor_direction(bdata,bdata->direction);
+    if((bdata->direction == backward) && (bdata->pmotor->pwm_polarity == 0))
+        gpio_dcmotors_set_motor_direction(bdata,bdata->direction);
     goto pwm_cal;
 
     if(bdata->cur_speed == bdata->speed) return;
@@ -241,19 +247,20 @@ static void gpio_dcmotors_motor_speed_update(struct gpio_motor_data *bdata){
     if(bdata->speed > bdata->cur_speed) next_speed = bdata->cur_speed + diff_speed;
         else next_speed = bdata->cur_speed - diff_speed;
 pwm_cal:
-    pmotor->pwm_duty = SQRT(next_speed*10000/(vSPEED_TO_wSPEED_BY_MOTOR(1000)));
-       // (vSPEED_TO_wSPEED_BY_MOTOR(pmotor->max_speed)));
+    pmotor->pwm_duty = SQRT(10000*next_speed/500);
     if((pmotor->pwm_duty >0) & (pmotor->pwm_duty < 20)) pmotor->pwm_duty = 20;
+    if(bdata->direction == backward)
+        pmotor->pwm_duty = 100 - pmotor->pwm_duty;
     pmotor->pwm_duty_cycle = pmotor->pwm_duty * pmotor->pwm_period_ns /100;
 //printk("duty:%d\n",pmotor->pwm_duty);
-    if(pmotor->status == disable)
-        pwm_disable(pmotor->pwm);
+
+    pwm_disable(pmotor->pwm);
     pwm_config(pmotor->pwm,pmotor->pwm_duty_cycle, pmotor->pwm_period_ns);
     if(pmotor->status == enable)
         pwm_enable(pmotor->pwm);
 
 //for test:
-    pwm_enable(pmotor->pwm); 
+    pwm_enable(pmotor->pwm);
   return;
 }
 
@@ -262,23 +269,23 @@ void gpio_dcmotors_set_motor_direction(struct gpio_motor_data *bdata,enum motor_
 	unsigned int gpio_dcmotors_pwm_polarity,gpio_dr_value;
 
 	if(direction == forward){
-		gpio_dcmotors_pwm_polarity = motor->gpio_forwoard_default_level;
-		gpio_dr_value = motor->gpio_forwoard_default_level;
+		gpio_dcmotors_pwm_polarity = 0;
+		gpio_dr_value = 0;
 	}
 	else {
-		gpio_dcmotors_pwm_polarity = (~motor->gpio_forwoard_default_level) && 0x01;
-		gpio_dr_value = (~motor->gpio_forwoard_default_level) && 0x01;
+		gpio_dcmotors_pwm_polarity = 1;
+		gpio_dr_value = 1;
 	}
 
 	pwm_disable(motor->pwm);
 	pwm_set_polarity(motor->pwm, gpio_dcmotors_pwm_polarity);//set pwm polarity;
-	pwm_enable(motor->pwm);
-    motor->status = enable;
-
+    motor->pwm_polarity = gpio_dcmotors_pwm_polarity;
 udelay(1000);
     gpio_set_value(motor->gpio_dr, gpio_dr_value);//set dir;
 	printk("Change Motor %s direction to %s \n",
 			motor->desc,(direction == forward)? "forward":"backward");
+if(motor->status == enable)
+	pwm_enable(motor->pwm);
 }
 
 static void gpio_dcmotors_gpio_timer(unsigned long _data)
@@ -295,74 +302,60 @@ static irqreturn_t gpio_dcmotors_gpio_capture_a_isr(int irq, void *dev_id)
 	struct gpio_dcmotors_motor *pmotor = bdata->pmotor;
     unsigned int i,j;
     struct timeval tv;
-    unsigned int  cur_counter_a,cur_speed;
-	enum motor_direction direction = bdata->direction;
+    unsigned int  cur_counter_a,cur_speed_t;
+	//enum motor_direction direction = bdata->direction;
     unsigned int counter_a = bdata->pmotor->counter_a;
     unsigned int cur_circle_index = bdata->cur_circle_index;
     unsigned int *circle_speed = &bdata->circle_speed[0];
-	BUG_ON(irq != bdata->pmotor->irqca);
+
+    BUG_ON(irq != bdata->pmotor->irqca);
 
     do_gettimeofday(&tv); //cal time val us
     cur_counter_a = tv.tv_usec;//cal time val us
 
+/*/if motor  real direction != motor->direction, clean speed cal
     if(((gpio_get_value(pmotor->gpio_capture_b)) & 1)==0){// a falling, b = 0: motor back running;
-		if(bdata->direction == forward){
-            pwm_disable(pmotor->pwm);
-            pmotor->status = disable;
-            if(cur_counter_a - counter_a > 20000){
-                direction = forward;///switch motor direction to forward
-                goto clean;
-            }
-		}else if(pmotor->status == disable)
-                    goto clean;
+		if(bdata->direction == forward)
+            goto clean;
 	}else {// in or used be in forward; cal motor speed
-        if(bdata->direction == backward){
-            pwm_disable(bdata->pmotor->pwm);
-            pmotor->status = disable;
-            if(cur_counter_a - counter_a > 20000){
-                direction = backward;///;switch motor direction to backward
-		        goto clean;
-            }
-		}else if(pmotor->status == disable)
-                    goto clean;
+        if(bdata->direction == backward)
+            goto clean;
     }
-
+*/
 	if(counter_a != 0){
 	    if(cur_circle_index > 4){
 		    cur_circle_index = 0;
 	    }
-	    circle_speed[cur_circle_index++] = cur_counter_a - counter_a;
+        if((cur_counter_a - counter_a) > 0xc00)
+            circle_speed[cur_circle_index++] = cur_counter_a - counter_a;
+        else printk("ca:%d;cca:%d\ndf:%d\n\n",counter_a, cur_counter_a,  cur_counter_a - counter_a);
     }
-	bdata->pmotor->counter_a = cur_counter_a;
 
     j = 0;
-    cur_speed = 0;
+    cur_speed_t = 0;
 	for(i = 0; i<5;i++){
 	    if(bdata->circle_speed[i]){
 		    j++;
-		    cur_speed = cur_speed + bdata->circle_speed[i];
+		    cur_speed_t = cur_speed_t + bdata->circle_speed[i];
 	    }
     }
 
-    if(cur_speed)
-        cur_speed = j*10000000/cur_speed;//10*w
+    if(cur_speed_t)
+	bdata->cur_speed_t = cur_speed_t;//10*w
+
+    bdata->pmotor->counter_a = cur_counter_a;
+    bdata->cur_circle_index = cur_circle_index;
     goto out;
 
 clean:
     for(i = 0; i<5;i++)
         bdata->circle_speed[i] = 0;
-    counter_a = 0;
-    cur_speed = 0;
-    cur_circle_index = 0;
-    gpio_dcmotors_set_motor_direction(bdata,direction);///;forward
-
-out:
-	bdata->cur_speed = cur_speed;//10*w
-    bdata->pmotor->counter_a = counter_a;
-    bdata->cur_circle_index = cur_circle_index;
+	bdata->cur_speed_t = 0;
+    bdata->pmotor->counter_a = 0;
+    bdata->cur_circle_index = 0;
 		//first try use gettimeofday cal motor speed; if not enough,try hrtimer;
-
-	printk("inta: bdata->cur speed %d (10*w)!\n",bdata->cur_speed);
+out:
+	//printk("inta: bdata->cur speed %d (10*w)!\n",bdata->cur_speed);
 
 	return IRQ_HANDLED;
 }
@@ -371,18 +364,17 @@ void set_speed_v2w(struct motor_classdev *motor_cdev, int speed){
     struct gpio_motor_data *bdata =
         container_of(motor_cdev, struct gpio_motor_data, cdev);
     bdata->direction = (speed >= 0) ?   forward :   backward;
-    bdata->speed = vSPEED_TO_wSPEED_BY_MOTOR(abs(speed));
+    bdata->speed = abs(speed);
     printk("abs(bdata->speed):%d ;direction %s\n",bdata->speed,(bdata->direction == forward) ? "forward" : "backward");
 };
 
 int get_speed_w2v(struct motor_classdev *motor_cdev){
     int speed;
     struct gpio_motor_data *bdata =
-        container_of(motor_cdev, struct gpio_motor_data, cdev);
-    speed = wSPEED_TO_vSPEED_BY_MOTOR(bdata->cur_speed);
-    printk("abs(speed):%d ;direction %s\n",bdata->speed,(bdata->direction == forward) ? "forward" : "backward");
-    printk("abs(bdata->cur_speed):%d ;direction %s\n",bdata->cur_speed,(bdata->direction == forward) ? "forward" : "backward");
+    container_of(motor_cdev, struct gpio_motor_data, cdev);
+    speed = bdata->cur_speed;
     speed = (bdata->direction == forward) ? speed : (0 - speed);
+    printk("abs(speed):%d ;direction %s\n",speed,(bdata->direction == forward) ? "forward" : "backward");
     return speed;
 };
 

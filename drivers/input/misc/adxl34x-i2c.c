@@ -13,6 +13,7 @@
 #include <linux/types.h>
 #include <linux/pm.h>
 #include "adxl34x.h"
+#include <linux/of_gpio.h>
 
 static int adxl34x_smbus_read(struct device *dev, unsigned char reg)
 {
@@ -73,6 +74,29 @@ static const struct adxl34x_bus_ops adxl34x_i2c_bops = {
 	.read_block	= adxl34x_i2c_read_block,
 };
 
+static int adxl34_get_irq(struct device *dev)
+{
+    struct device_node *node = dev->of_node;
+    int gpio,irq;
+
+    gpio = of_get_gpio(node, 0);
+    if (gpio_is_valid(gpio))
+        if(gpio_request_one(gpio, GPIOF_IN, NULL) >= 0)
+        {
+            irq = gpio_to_irq(gpio);
+            if( irq > 0) {
+                return irq;
+            }else
+            dev_err(dev,"Unable to get irq number for GPIO %d, error %d\n", gpio, irq);
+        }
+        else
+            dev_err(dev, "Failed to request GPIO %d\n",gpio);
+    else
+        dev_err(dev, "failed to get interrupt gpio\n");
+
+    return -1;
+}
+
 static int adxl34x_i2c_probe(struct i2c_client *client,
 				       const struct i2c_device_id *id)
 {
@@ -85,6 +109,10 @@ static int adxl34x_i2c_probe(struct i2c_client *client,
 		dev_err(&client->dev, "SMBUS Byte Data not Supported\n");
 		return -EIO;
 	}
+
+    error = adxl34_get_irq(&client->dev);
+    if(error > 0 )/*if set gpio int,override irq*/
+         client->irq = error;
 
 	ac = adxl34x_probe(&client->dev, client->irq, false,
 			   i2c_check_functionality(client->adapter,
