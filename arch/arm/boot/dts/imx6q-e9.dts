@@ -237,8 +237,8 @@
 			"Headphone Jack", "HP_R",
 			"Ext Spk", "SPK_LP",
 			"Ext Spk", "SPK_LN",
-			"MICB", "LINPUT1",
-			"Mic Jack", "MICB";
+            "MICB", "LINPUT1",
+            "AMIC", "MICB";
 		mux-int-port = <2>;
 		mux-ext-port = <3>;
 		hp-det-gpios = <&gpio3 31 1>;
@@ -398,7 +398,7 @@
 };
 
 &wdog1 {
-    status = "disabled";
+    status = "okay";
 };
 
 &gpu {
@@ -470,6 +470,8 @@
 		PLLVDD-supply = <&reg_audio>;
 		SPKVDD1-supply = <&reg_audio>;
 		SPKVDD2-supply = <&reg_audio>;
+ /*       capless;*/
+        shared_lrclk;
        };
 /*    adxl345@53 {
         compatible = "adi,adxl34x","adxl34x";
@@ -482,7 +484,7 @@
         reg = <0x1b>;
 //		gpios = <&gpio1 28 1>;
     };
-   */ 
+    
     hmc5883l@1e {
         compatible = "hmc5883l";
         reg = <0x1e>;
@@ -492,6 +494,7 @@
         compatible = "l3g4200d_gyr";
         reg = <0x69>;
     };
+*/
 };
 
 
